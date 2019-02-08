@@ -1,6 +1,5 @@
 package com.kodcu.controller;
 
-
 import com.esotericsoftware.yamlbeans.YamlException;
 import com.esotericsoftware.yamlbeans.YamlReader;
 import com.esotericsoftware.yamlbeans.YamlWriter;
@@ -68,7 +67,6 @@ import org.springframework.web.socket.TextMessage;
 import org.springframework.web.socket.WebSocketSession;
 import org.springframework.web.socket.handler.TextWebSocketHandler;
 import org.w3c.dom.svg.SVGDocument;
-
 import javax.servlet.http.HttpServletRequest;
 import java.io.*;
 import java.net.URISyntaxException;
@@ -84,9 +82,7 @@ import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
-
 import static java.nio.file.StandardOpenOption.*;
-
 
 @Controller
 public class AsciiDocController extends TextWebSocketHandler implements Initializable {
@@ -94,22 +90,39 @@ public class AsciiDocController extends TextWebSocketHandler implements Initiali
     private Logger logger = LoggerFactory.getLogger(AsciiDocController.class);
 
     public TabPane tabPane;
+
     public WebView previewView;
+
     public SplitPane splitPane;
+
     public SplitPane splitPaneVertical;
+
     public TreeView<Item> treeView;
+
     public Label splitHideButton;
+
     public Label workingDirButton;
+
     public AnchorPane rootAnchor;
+
     public MenuBar recentFilesBar;
+
     public ProgressBar indikator;
+
     public ListView<String> recentListView;
+
     public MenuItem openFileTreeItem;
+
     public MenuItem openFileListItem;
+
     public MenuItem copyPathTreeItem;
+
     public MenuItem copyPathListItem;
+
     public MenuItem copyTreeItem;
+
     public MenuItem copyListItem;
+
     private WebView mathjaxView;
 
     @Autowired
@@ -158,63 +171,83 @@ public class AsciiDocController extends TextWebSocketHandler implements Initiali
     private AwesomeService awesomeService;
 
     private ExecutorService singleWorker = Executors.newSingleThreadExecutor();
+
     private ExecutorService threadPollWorker = Executors.newFixedThreadPool(4);
 
     private Stage stage;
+
     private WebEngine previewEngine;
+
     private StringProperty lastRendered = new SimpleStringProperty();
+
     private List<WebSocketSession> sessionList = new ArrayList<>();
+
     private Scene scene;
+
     private AnchorPane tableAnchor;
+
     private Stage tableStage;
+
     private Clipboard clipboard = Clipboard.getSystemClipboard();
+
     private Optional<Path> initialDirectoryy = Optional.ofNullable(null);
+
     private ObservableList<String> recentFiles = FXCollections.synchronizedObservableList(FXCollections.observableArrayList());
+
     private AnchorPane configAnchor;
+
     private Stage configStage;
+
     private int tomcatPort = 8080;
+
     private HostServicesDelegate hostServices;
+
     private Path configPath;
+
     private Config config;
+
     private Optional<Path> workingDirectory = Optional.of(Paths.get(System.getProperty("user.home")));
+
     private Optional<File> initialDirectory = Optional.empty();
+
     private List<Optional<Path>> closedPaths = new ArrayList<>();
 
     private List<String> bookNames = Arrays.asList("book.asc", "book.txt", "book.asciidoc", "book.adoc", "book.ad");
 
     private Supplier<Path> workingDirectorySupplier = () -> {
-
         DirectoryChooser directoryChooser = newDirectoryChooser("Select working directory");
         File file = directoryChooser.showDialog(null);
-
         workingDirectory = Optional.ofNullable(file.toPath());
-
-        this.workingDirectory.ifPresent(path -> {
+        this.workingDirectory.ifPresent(( path) -> {
             this.fileBrowser.browse(treeView, this, path);
         });
-
         return Objects.nonNull(file) ? file.toPath() : null;
     };
 
     private DirectoryChooser newDirectoryChooser(String title) {
         DirectoryChooser directoryChooser = new DirectoryChooser();
         directoryChooser.setTitle(title);
-        initialDirectory.ifPresent(file -> {
-            if (Files.isDirectory(file.toPath()))
+        initialDirectory.ifPresent(( file) -> {
+            if (Files.isDirectory(file.toPath())) {
                 directoryChooser.setInitialDirectory(file);
-            else
+            } else {
                 directoryChooser.setInitialDirectory(file.toPath().getParent().toFile());
+            }
         });
         return directoryChooser;
     }
 
-    private Consumer<Path> openFileConsumer = path -> {
-        if (Files.isDirectory(path))
+    private Consumer<Path> openFileConsumer = ( path) -> {
+        if (Files.isDirectory(path)) {
             return;
-        if (pathResolver.isAsciidoc(path))
+        }
+        if (pathResolver.isAsciidoc(path)) {
             this.addTab(path);
-        else if (pathResolver.isImage(path))
-            this.addImageTab(path);
+        } else {
+            if (pathResolver.isImage(path)) {
+                this.addImageTab(path);
+            }
+        }
     };
 
     private Supplier<Path> pathSaveSupplier = () -> {
@@ -227,19 +260,19 @@ public class AsciiDocController extends TextWebSocketHandler implements Initiali
     private FileChooser newFileChooser(String title) {
         FileChooser fileChooser = new FileChooser();
         fileChooser.setTitle(title);
-        initialDirectory.ifPresent(file -> {
-            if (Files.isDirectory(file.toPath()))
+        initialDirectory.ifPresent(( file) -> {
+            if (Files.isDirectory(file.toPath())) {
                 fileChooser.setInitialDirectory(file);
-            else
+            } else {
                 fileChooser.setInitialDirectory(file.toPath().getParent().toFile());
+            }
         });
-
         return fileChooser;
     }
 
-    ChangeListener<String> lastRenderedChangeListener = (observableValue, old, nev) -> {
-        runSingleTaskLater(task -> {
-            sessionList.stream().filter(e -> e.isOpen()).forEach(e -> {
+    ChangeListener<String> lastRenderedChangeListener = ( observableValue,  old,  nev) -> {
+        runSingleTaskLater(( task) -> {
+            sessionList.stream().filter(( e) -> e.isOpen()).forEach(( e) -> {
                 try {
                     e.sendMessage(new TextMessage(nev));
                 } catch (IOException ex) {
@@ -254,16 +287,13 @@ public class AsciiDocController extends TextWebSocketHandler implements Initiali
         tableStage.show();
     }
 
-
     @FXML
     private void openConfig(ActionEvent event) {
         configStage.show();
     }
 
-
     @FXML
     private void fullScreen(ActionEvent event) {
-
         getStage().setFullScreen(!getStage().isFullScreen());
     }
 
@@ -272,24 +302,20 @@ public class AsciiDocController extends TextWebSocketHandler implements Initiali
         splitPane.setDividerPositions(0.1610294117647059, 0.5823529411764706);
     }
 
-
     @FXML
     private void generatePdf(ActionEvent event) {
-
         Path currentPath = workingDirectory.orElseGet(workingDirectorySupplier);
         docBookController.generateDocbook(previewEngine, currentPath, false);
-
-        runTaskLater((task) -> {
+        runTaskLater(( task) -> {
             fopServiceRunner.generateBook(currentPath, configPath);
         });
     }
 
     @FXML
     private void generateSampleBook(ActionEvent event) {
-
         DirectoryChooser directoryChooser = newDirectoryChooser("Select a New Directory for sample book");
         File file = directoryChooser.showDialog(null);
-        runTaskLater((task) -> {
+        runTaskLater(( task) -> {
             sampleBookService.produceSampleBook(configPath, file.toPath());
             workingDirectory = Optional.of(file.toPath());
             fileBrowser.browse(treeView, this, file.toPath());
@@ -304,140 +330,109 @@ public class AsciiDocController extends TextWebSocketHandler implements Initiali
     private void convertDocbook(ActionEvent event) {
         Path currentPath = workingDirectory.orElseGet(workingDirectorySupplier);
         docBookController.generateDocbook(previewEngine, currentPath, true);
-
     }
 
     @FXML
     private void convertEpub(ActionEvent event) throws Exception {
-
         Path currentPath = workingDirectory.orElseGet(workingDirectorySupplier);
         docBookController.generateDocbook(previewEngine, currentPath, false);
-
-        runTaskLater((task) -> {
+        runTaskLater(( task) -> {
             epub3Service.produceEpub3(currentPath, configPath);
         });
     }
 
     public String appendFormula(String fileName, String formula) {
-
         if (fileName.endsWith(".png")) {
             WebEngine engine = mathjaxView.getEngine();
-            engine.executeScript(String.format("appendFormula('%s','%s')", fileName, IOHelper.normalize(formula)));
+            engine.executeScript(String.format("appendFormula(\'%s\',\'%s\')", fileName, IOHelper.normalize(formula)));
             return "images/" + fileName;
         }
-
         return "";
-
     }
 
-    public void svgToPng(String fileName, String svg, String formula,float width,float height) throws IOException, TranscoderException {
-
+    public void svgToPng(String fileName, String svg, String formula, float width, float height) throws IOException, TranscoderException {
         if (!fileName.endsWith(".png") || !svg.startsWith("<svg"))
             return;
-
         Integer cacheHit = current.getCache().get(fileName);
         int hashCode = fileName.concat(formula).hashCode();
         if (Objects.nonNull(cacheHit))
             if (hashCode == cacheHit)
                 return;
-
         current.getCache().put(fileName, hashCode);
-
         try (StringReader reader = new StringReader(svg);
-             ByteArrayOutputStream ostream = new ByteArrayOutputStream();) {
-
+            ByteArrayOutputStream ostream = new ByteArrayOutputStream()) {
             String uri = "http://www.w3.org/2000/svg";
             SAXSVGDocumentFactory f = new SAXSVGDocumentFactory(XMLResourceDescriptor.getXMLParserClassName());
             SVGDocument doc = f.createSVGDocument(uri, reader);
-
             TranscoderInput transcoderInput = new TranscoderInput(doc);
             TranscoderOutput transcoderOutput = new TranscoderOutput(ostream);
-
             PNGTranscoder transcoder = new PNGTranscoder();
-            transcoder.addTranscodingHint(PNGTranscoder.KEY_WIDTH,width);
-            transcoder.addTranscodingHint(PNGTranscoder.KEY_HEIGHT,height);
+            transcoder.addTranscodingHint(PNGTranscoder.KEY_WIDTH, width);
+            transcoder.addTranscodingHint(PNGTranscoder.KEY_HEIGHT, height);
             transcoder.transcode(transcoderInput, transcoderOutput);
-
             if (!current.currentPath().isPresent())
                 saveDoc();
-
             Path path = current.currentPathParent().get();
             Files.createDirectories(path.resolve("images"));
-
             Files.write(path.resolve("images/").resolve(fileName), ostream.toByteArray(), CREATE, WRITE, TRUNCATE_EXISTING);
-
             lastRenderedChangeListener.changed(null, lastRendered.getValue(), lastRendered.getValue());
-
         }
-
     }
 
-    public <T> void runTaskLater(Consumer<Task<T>> consumer) {
-
+    public <T extends java.lang.Object> void runTaskLater(Consumer<Task<T>> consumer) {
         Task<T> task = new Task<T>() {
+
             @Override
             protected T call() throws Exception {
                 consumer.accept(this);
                 return null;
             }
         };
-
         threadPollWorker.submit(task);
     }
 
-    public <T> void runSingleTaskLater(Consumer<Task<T>> consumer) {
-
+    public <T extends java.lang.Object> void runSingleTaskLater(Consumer<Task<T>> consumer) {
         Task<T> task = new Task<T>() {
+
             @Override
             protected T call() throws Exception {
                 consumer.accept(this);
                 return null;
             }
         };
-
         singleWorker.submit(task);
     }
 
     @FXML
     private void convertMobi(ActionEvent event) throws Exception {
-
-
         Path currentPath = workingDirectory.orElseGet(workingDirectorySupplier);
-
         if (Objects.nonNull(config.getKindlegenDir())) {
             if (!Files.exists(Paths.get(config.getKindlegenDir()))) {
                 config.setKindlegenDir(null);
             }
         }
-
         if (Objects.isNull(config.getKindlegenDir())) {
-            FileChooser fileChooser = newFileChooser("Select 'kindlegen' executable");
+            FileChooser fileChooser = newFileChooser("Select \'kindlegen\' executable");
             File kindlegenFile = fileChooser.showOpenDialog(null);
-            if (Objects.isNull(kindlegenFile))
+            if (Objects.isNull(kindlegenFile)) {
                 return;
-
+            }
             config.setKindlegenDir(kindlegenFile.toPath().getParent().toString());
-
         }
-
-        runTaskLater((task) -> {
+        runTaskLater(( task) -> {
             epub3Service.produceEpub3(currentPath, configPath);
             kindleMobiService.produceMobi(currentPath, config.getKindlegenDir());
         });
-
     }
 
     @FXML
     private void generateHtml(ActionEvent event) {
-
         Path currentPath = workingDirectory.orElseGet(workingDirectorySupplier);
-
         htmlBookService.produceXhtml5(previewEngine, currentPath, configPath);
     }
 
     @Override
     public void initialize(URL url, ResourceBundle rb) {
-
         try {
             CodeSource codeSource = AsciiDocController.class.getProtectionDomain().getCodeSource();
             File jarFile = new File(codeSource.getLocation().toURI().getPath());
@@ -445,25 +440,21 @@ public class AsciiDocController extends TextWebSocketHandler implements Initiali
         } catch (URISyntaxException e) {
             e.printStackTrace();
         }
-
         loadConfigurations();
         loadRecentFileList();
-
         recentListView.setItems(recentFiles);
-        recentFiles.addListener((ListChangeListener<String>) c -> {
+        recentFiles.addListener((ListChangeListener<String>) ( c) -> {
             recentListView.visibleProperty().setValue(c.getList().size() > 0);
             recentListView.getSelectionModel().selectFirst();
         });
-
-        recentListView.setOnMouseClicked(event -> {
+        recentListView.setOnMouseClicked(( event) -> {
             if (event.getClickCount() > 1) {
                 openRecentListFile(event);
             }
         });
-
-        treeView.setCellFactory(param -> {
+        treeView.setCellFactory(( param) -> {
             TreeCell<Item> cell = new TextFieldTreeCell<Item>();
-            cell.setOnDragDetected(event -> {
+            cell.setOnDragDetected(( event) -> {
                 Dragboard db = cell.startDragAndDrop(TransferMode.ANY);
                 ClipboardContent content = new ClipboardContent();
                 content.putFiles(Arrays.asList(cell.getTreeItem().getValue().getPath().toFile()));
@@ -471,112 +462,100 @@ public class AsciiDocController extends TextWebSocketHandler implements Initiali
             });
             return cell;
         });
-
         tomcatPort = server.getEmbeddedServletContainer().getPort();
-
         lastRendered.addListener(lastRenderedChangeListener);
-
-        // MathJax
         mathjaxView = new WebView();
         mathjaxView.setVisible(false);
         rootAnchor.getChildren().add(mathjaxView);
-
         WebEngine mathjaxEngine = mathjaxView.getEngine();
-        mathjaxEngine.getLoadWorker().stateProperty().addListener((observableValue1, state, state2) -> {
+        mathjaxEngine.getLoadWorker().stateProperty().addListener(( observableValue1,  state,  state2) -> {
             JSObject window = (JSObject) mathjaxEngine.executeScript("window");
-            if (Objects.isNull(window.getMember("app"))) ;
+            if (Objects.isNull(window.getMember("app"))) {
+                ;
+            }
             window.setMember("app", this);
         });
-        //
-
         mathjaxView.getEngine().load(String.format("http://localhost:%d/mathjax.html", tomcatPort));
-
         previewEngine = previewView.getEngine();
         previewEngine.load(String.format("http://localhost:%d/index.html", tomcatPort));
-
-        previewEngine.getLoadWorker().stateProperty().addListener((observableValue1, state, state2) -> {
+        previewEngine.getLoadWorker().stateProperty().addListener(( observableValue1,  state,  state2) -> {
             JSObject window = (JSObject) previewEngine.executeScript("window");
-            if (Objects.isNull(window.getMember("app"))) ;
+            if (Objects.isNull(window.getMember("app"))) {
+                ;
+            }
             window.setMember("app", this);
         });
-
-        previewEngine.getLoadWorker().exceptionProperty().addListener((ov, t, t1) -> {
+        previewEngine.getLoadWorker().exceptionProperty().addListener(( ov,  t,  t1) -> {
             t1.printStackTrace();
         });
-
-
-        /// Treeview
-
-        if (Objects.nonNull(config.getWorkingDirectory()))
+        if (Objects.nonNull(config.getWorkingDirectory())) {
             workingDirectory = Optional.ofNullable(Paths.get(config.getWorkingDirectory()));
-
+        }
         Path workDir = workingDirectory.orElse(Paths.get(System.getProperty("user.home")));
-//
         fileBrowser.browse(treeView, this, workDir);
-
-        //
-
         AwesomeDude.setIcon(workingDirButton, AwesomeIcon.FOLDER_ALT, "14.0");
         AwesomeDude.setIcon(splitHideButton, AwesomeIcon.CHEVRON_LEFT, "14.0");
-
-        tabPane.getTabs().addListener((ListChangeListener<Tab>) c -> {
-            if (tabPane.getTabs().isEmpty())
+        tabPane.getTabs().addListener((ListChangeListener<Tab>) ( c) -> {
+            if (tabPane.getTabs().isEmpty()) {
                 runActionLater(this::newDoc);
+            }
         });
-
-        openFileTreeItem.setOnAction(event -> {
+        openFileTreeItem.setOnAction(( event) -> {
             Path path = getSelectedTabPath();
             openFileConsumer.accept(path);
         });
-
         openFileListItem.setOnAction(this::openRecentListFile);
-
-        copyPathTreeItem.setOnAction(event -> {
+        copyPathTreeItem.setOnAction(( event) -> {
             Path path = getSelectedTabPath();
             this.cutCopy(path.toString());
         });
-
-        copyPathListItem.setOnAction(event -> {
+        copyPathListItem.setOnAction(( event) -> {
             this.cutCopy(recentListView.getSelectionModel().getSelectedItem());
         });
-
-        copyTreeItem.setOnAction(event -> {
+        copyTreeItem.setOnAction(( event) -> {
             Path path = getSelectedTabPath();
             this.copyFile(path);
         });
-
-        copyListItem.setOnAction(event -> {
+        copyListItem.setOnAction(( event) -> {
             Path path = Paths.get(recentListView.getSelectionModel().getSelectedItem());
             this.copyFile(path);
         });
-
-        treeView.setOnMouseClicked(event -> {
+        treeView.setOnMouseClicked(( event) -> {
             TreeItem<Item> selectedItem = treeView.getSelectionModel().getSelectedItem();
-            if (Objects.isNull(selectedItem))
+            if (Objects.isNull(selectedItem)) {
                 return;
+            }
             Path selectedPath = selectedItem.getValue().getPath();
-            if (event.getButton() == MouseButton.PRIMARY)
+            if (event.getButton() == MouseButton.PRIMARY) {
                 if (Files.isDirectory(selectedPath)) {
                     try {
-                        if (selectedItem.getChildren().size() == 0)
-                            Files.newDirectoryStream(selectedPath).forEach(path -> {
-                                if (pathResolver.isHidden(path))
+                        if (selectedItem.getChildren().size() == 0) {
+                            final List<Path> files = new LinkedList<>();
+                            Files.newDirectoryStream(selectedPath).forEach(( path) -> {
+                                if (pathResolver.isHidden(path)) {
                                     return;
-
-                                if (pathResolver.isViewable(path))
-                                    selectedItem.getChildren().add(new TreeItem<>(new Item(path), awesomeService.getIcon(path)));
+                                }
+                                if (pathResolver.isViewable(path)) {
+                                    files.add(path);
+                                }
                             });
+                            Collections.sort(files);
+                            files.forEach(( path) -> {
+                                selectedItem.getChildren().add(new TreeItem<>(new Item(path), awesomeService.getIcon(path)));
+                            });
+                        }
                         selectedItem.setExpanded(!selectedItem.isExpanded());
                     } catch (IOException e) {
                         e.printStackTrace();
                     }
-                } else if (event.getClickCount() > 1) {
-                    openFileConsumer.accept(selectedPath);
+                } else {
+                    if (event.getClickCount() > 1) {
+                        openFileConsumer.accept(selectedPath);
+                    }
                 }
+            }
         });
-
         runActionLater(this::newDoc);
-
     }
 
     private void addImageTab(Path imagePath) {
@@ -586,7 +565,6 @@ public class AsciiDocController extends TextWebSocketHandler implements Initiali
         ImageView imageView = new ImageView(new Image(IOHelper.pathToUrl(imagePath)));
         imageView.setPreserveRatio(true);
         imageView.fitWidthProperty().bind(tabPane.widthProperty());
-
         tab.setContent(imageView);
         current.putTab(tab, imagePath, current.currentView());
         tabPane.getTabs().add(tab);
@@ -595,11 +573,11 @@ public class AsciiDocController extends TextWebSocketHandler implements Initiali
 
     private void openRecentListFile(Event event) {
         Path path = Paths.get(recentListView.getSelectionModel().getSelectedItem());
-
-        if (pathResolver.isAsciidoc(path))
+        if (pathResolver.isAsciidoc(path)) {
             addTab(path);
-        else
+        } else {
             getHostServices().showDocument(path.toUri().toString());
+        }
     }
 
     private Path getSelectedTabPath() {
@@ -617,30 +595,24 @@ public class AsciiDocController extends TextWebSocketHandler implements Initiali
 
     private void loadConfigurations() {
         try {
-            YamlReader yamlReader =
-                    new YamlReader(new FileReader(configPath.resolve("config.yml").toFile()));
+            YamlReader yamlReader = new YamlReader(new FileReader(configPath.resolve("config.yml").toFile()));
             yamlReader.getConfig().setClassTag("Config", Config.class);
             config = yamlReader.read(Config.class);
-
-        } catch (YamlException | FileNotFoundException e) {
+        } catch (YamlExceptionFileNotFoundException |  e) {
             e.printStackTrace();
         }
-
-        if (!config.getDirectoryPanel())
+        if (!config.getDirectoryPanel()) {
             Platform.runLater(() -> {
                 splitPane.setDividerPositions(0, 0.51);
             });
-
+        }
     }
 
     private void loadRecentFileList() {
-
         try {
-            YamlReader yamlReader =
-                    new YamlReader(new FileReader(configPath.resolve("recentFiles.yml").toFile()));
+            YamlReader yamlReader = new YamlReader(new FileReader(configPath.resolve("recentFiles.yml").toFile()));
             yamlReader.getConfig().setClassTag("RecentFiles", RecentFiles.class);
             RecentFiles readed = yamlReader.read(RecentFiles.class);
-
             recentFiles.addAll(readed.getFiles());
         } catch (YamlException e) {
             e.printStackTrace();
@@ -650,7 +622,6 @@ public class AsciiDocController extends TextWebSocketHandler implements Initiali
     }
 
     public void externalBrowse() {
-
         hostServices.showDocument(String.format("http://localhost:%d/index.html", tomcatPort));
     }
 
@@ -663,7 +634,6 @@ public class AsciiDocController extends TextWebSocketHandler implements Initiali
             workingDirectory = Optional.of(selectedDir.toPath());
             fileBrowser.browse(treeView, this, selectedDir.toPath());
             initialDirectory = Optional.ofNullable(selectedDir);
-
         }
     }
 
@@ -671,28 +641,23 @@ public class AsciiDocController extends TextWebSocketHandler implements Initiali
     public void afterConnectionEstablished(WebSocketSession session) throws Exception {
         sessionList.add(session);
         String value = lastRendered.getValue();
-        if (Objects.nonNull(value))
+        if (Objects.nonNull(value)) {
             session.sendMessage(new TextMessage(value));
-
+        }
     }
 
     @FXML
     public void closeApp(ActionEvent event) throws IOException {
-
         File recentFileYml = configPath.resolve("recentFiles.yml").toFile();
         YamlWriter yamlWriter = new YamlWriter(new FileWriter(recentFileYml));
         yamlWriter.getConfig().setClassTag("RecentFiles", RecentFiles.class);
         yamlWriter.write(new RecentFiles(recentFiles));
         yamlWriter.close();
-
-        //
-
         File configYml = configPath.resolve("config.yml").toFile();
         yamlWriter = new YamlWriter(new FileWriter(configYml));
         yamlWriter.getConfig().setClassTag("Config", Config.class);
         yamlWriter.write(config);
         yamlWriter.close();
-
     }
 
     @FXML
@@ -702,18 +667,14 @@ public class AsciiDocController extends TextWebSocketHandler implements Initiali
         fileChooser.getExtensionFilters().add(new ExtensionFilter("All", "*.*"));
         List<File> chosenFiles = fileChooser.showOpenMultipleDialog(stage);
         if (chosenFiles != null) {
-            chosenFiles.stream().map(e -> e.toPath()).forEach(this::addTab);
-            chosenFiles.stream()
-                    .map(File::toString).filter(file -> !recentFiles.contains(file))
-                    .forEach(recentFiles::addAll);
+            chosenFiles.stream().map(( e) -> e.toPath()).forEach(this::addTab);
+            chosenFiles.stream().map(File::toString).filter(( file) -> !recentFiles.contains(file)).forEach(recentFiles::addAll);
             initialDirectory = Optional.ofNullable(chosenFiles.get(0));
         }
-
     }
 
     @FXML
     public void newDoc(Event event) {
-
         WebView webView = createWebView();
         AnchorPane anchorPane = new AnchorPane();
         Node editorVBox = createEditorVBox(webView);
@@ -721,28 +682,26 @@ public class AsciiDocController extends TextWebSocketHandler implements Initiali
         anchorPane.getChildren().add(editorVBox);
         Tab tab = createTab();
         tab.setContent(anchorPane);
-        tab.selectedProperty().addListener((observableValue, before, after) -> {
+        tab.selectedProperty().addListener(( observableValue,  before,  after) -> {
             if (after) {
                 current.putTab(tab, current.getNewTabPaths().get(tab), webView);
                 WebEngine webEngine = webView.getEngine();
-
                 Worker.State state = webEngine.getLoadWorker().getState();
-                if (state == Worker.State.SUCCEEDED)
+                if (state == Worker.State.SUCCEEDED) {
                     webEngine.executeScript("waitForGetValue()");
+                }
             }
         });
         ((Label) tab.getGraphic()).setText("new *");
         current.putTab(tab, Optional.empty(), webView);
         tabPane.getTabs().add(tab);
         tabPane.getSelectionModel().select(tab);
-
     }
 
     private Node createEditorVBox(WebView webView) {
         MenuBar menuBar = new MenuBar();
         menuBar.getStyleClass().add("editorToolsBar");
         String iconSize = "14.0";
-
         Label saveLabel = AwesomeDude.createIconLabel(AwesomeIcon.SAVE, iconSize);
         Label newLabel = AwesomeDude.createIconLabel(AwesomeIcon.FILE_TEXT_ALT, iconSize);
         Label openLabel = AwesomeDude.createIconLabel(AwesomeIcon.FOLDER_ALTPEN_ALT, iconSize);
@@ -758,131 +717,85 @@ public class AsciiDocController extends TextWebSocketHandler implements Initiali
         Label superScriptLabel = AwesomeDude.createIconLabel(AwesomeIcon.SUPERSCRIPT, iconSize);
         Label underlineLabel = AwesomeDude.createIconLabel(AwesomeIcon.UNDERLINE, iconSize);
         Label hyperlinkLabel = AwesomeDude.createIconLabel(AwesomeIcon.LINK, iconSize);
-
-
-        // Events
         newLabel.setOnMouseClicked(this::newDoc);
         openLabel.setOnMouseClicked(this::openDoc);
         saveLabel.setOnMouseClicked(this::saveDoc);
-        boldLabel.setOnMouseClicked(event -> {
+        boldLabel.setOnMouseClicked(( event) -> {
             current.currentEngine().executeScript("boldText()");
         });
-        italicLabel.setOnMouseClicked(event -> {
+        italicLabel.setOnMouseClicked(( event) -> {
             current.currentEngine().executeScript("italicizeText()");
         });
-
-        codeLabel.setOnMouseClicked(event -> {
+        codeLabel.setOnMouseClicked(( event) -> {
             current.currentEngine().executeScript("addSourceCode()");
         });
-
         tableLabel.setOnMouseClicked(this::createTable);
-
-        subscriptLabel.setOnMouseClicked(event -> {
+        subscriptLabel.setOnMouseClicked(( event) -> {
             current.currentEngine().executeScript("subScript()");
         });
-
-        superScriptLabel.setOnMouseClicked(event -> {
+        superScriptLabel.setOnMouseClicked(( event) -> {
             current.currentEngine().executeScript("superScript()");
         });
-
-        imageLabel.setOnMouseClicked(event -> {
+        imageLabel.setOnMouseClicked(( event) -> {
             current.currentEngine().executeScript("addImageSection()");
         });
-
-        headerLabel.setOnMouseClicked(event -> {
+        headerLabel.setOnMouseClicked(( event) -> {
             current.currentEngine().executeScript("addHeading()");
         });
-
-        ulListLabel.setOnMouseClicked(event -> {
+        ulListLabel.setOnMouseClicked(( event) -> {
             current.currentEngine().executeScript("addUlList()");
         });
-
-        olListLabel.setOnMouseClicked(event -> {
+        olListLabel.setOnMouseClicked(( event) -> {
             current.currentEngine().executeScript("addOlList()");
         });
-
-        underlineLabel.setOnMouseClicked(event -> {
+        underlineLabel.setOnMouseClicked(( event) -> {
             current.currentEngine().executeScript("underlinedText()");
         });
-
-        hyperlinkLabel.setOnMouseClicked(event -> {
+        hyperlinkLabel.setOnMouseClicked(( event) -> {
             current.currentEngine().executeScript("addHyperLink()");
         });
-
-
-//        ColorPicker colorPicker=new ColorPicker(Color.BLACK);
-
-        menuBar.getMenus().addAll(
-                new Menu("", newLabel),
-                new Menu("", openLabel),
-                new Menu("", saveLabel),
-                new Menu("", boldLabel),
-                new Menu("", italicLabel),
-                new Menu("", underlineLabel),
-                new Menu("", headerLabel),
-                new Menu("", hyperlinkLabel),
-                new Menu("", codeLabel),
-                new Menu("", ulListLabel),
-                new Menu("", olListLabel),
-                new Menu("", tableLabel),
-                new Menu("", imageLabel),
-                new Menu("", subscriptLabel),
-                new Menu("", superScriptLabel)
-        );
-
+        menuBar.getMenus().addAll(new Menu("", newLabel), new Menu("", openLabel), new Menu("", saveLabel), new Menu("", boldLabel), new Menu("", italicLabel), new Menu("", underlineLabel), new Menu("", headerLabel), new Menu("", hyperlinkLabel), new Menu("", codeLabel), new Menu("", ulListLabel), new Menu("", olListLabel), new Menu("", tableLabel), new Menu("", imageLabel), new Menu("", subscriptLabel), new Menu("", superScriptLabel));
         ScrollPane scrollPane = new ScrollPane();
         scrollPane.setContent(webView);
         scrollPane.setFitToHeight(true);
         scrollPane.setFitToWidth(true);
         VBox.setVgrow(scrollPane, Priority.ALWAYS);
-
         return new VBox(menuBar, scrollPane);
     }
 
     public void addTab(Path path) {
-
         if (!Files.isExecutable(path)) {
             recentFiles.remove(path.toString());
             return;
         }
-
         AnchorPane anchorPane = new AnchorPane();
         WebView webView = createWebView();
         WebEngine webEngine = webView.getEngine();
-        webEngine.getLoadWorker().stateProperty().addListener((observableValue1, state, state2) -> {
+        webEngine.getLoadWorker().stateProperty().addListener(( observableValue1,  state,  state2) -> {
             if (state2 == Worker.State.SUCCEEDED) {
-                webEngine.executeScript(String.format("waitForSetValue('%s')", IOHelper.normalize(IOHelper.readFile(path))));
+                webEngine.executeScript(String.format("waitForSetValue(\'%s\')", IOHelper.normalize(IOHelper.readFile(path))));
             }
         });
-
         Node editorVBox = createEditorVBox(webView);
         fitToParent(editorVBox);
-
         anchorPane.getChildren().add(editorVBox);
-
         Tab tab = createTab();
         ((Label) tab.getGraphic()).setText(path.getFileName().toString());
         tab.setContent(anchorPane);
-
-        tab.selectedProperty().addListener((observableValue, before, after) -> {
+        tab.selectedProperty().addListener(( observableValue,  before,  after) -> {
             if (after) {
                 current.putTab(tab, path, webView);
-                webEngine.executeScript("if((typeof waitForGetValue)!='undefined') waitForGetValue()");
+                webEngine.executeScript("if((typeof waitForGetValue)!=\'undefined\') waitForGetValue()");
             }
         });
-
         current.putTab(tab, path, webView);
         tabPane.getTabs().add(tab);
-
         Tooltip tip = new Tooltip(path.toString());
         Tooltip.install(tab.getGraphic(), tip);
-
         Tab lastTab = tabPane.getTabs().get(tabPane.getTabs().size() - 1);
         tabPane.getSelectionModel().select(lastTab);
-
         recentFiles.remove(path.toString());
         recentFiles.add(0, path.toString());
-
     }
 
     @FXML
@@ -892,108 +805,92 @@ public class AsciiDocController extends TextWebSocketHandler implements Initiali
 
     private Tab createTab() {
         Tab tab = new Tab();
-
-        tab.setOnClosed(event -> {
+        tab.setOnClosed(( event) -> {
             this.keepClosedPath(tab);
         });
-
         MenuItem menuItem0 = new MenuItem("Close");
-        menuItem0.setOnAction(actionEvent -> {
+        menuItem0.setOnAction(( actionEvent) -> {
             this.keepClosedPath(tab);
             tabPane.getTabs().remove(tab);
         });
-
         MenuItem menuItem1 = new MenuItem("Close All");
-        menuItem1.setOnAction(actionEvent -> {
+        menuItem1.setOnAction(( actionEvent) -> {
             ObservableList<Tab> tabs = tabPane.getTabs();
-            if (tabs.size() > 0)
+            if (tabs.size() > 0) {
                 tabs.forEach(this::keepClosedPath);
-
+            }
             tabs.clear();
         });
-
         MenuItem menuItem2 = new MenuItem("Close Others");
-        menuItem2.setOnAction(actionEvent -> {
+        menuItem2.setOnAction(( actionEvent) -> {
             List<Tab> blackList = new ArrayList<>();
             blackList.addAll(tabPane.getTabs());
             blackList.remove(tab);
             tabPane.getTabs().removeAll(blackList);
-
-            if (blackList.size() > 0)
+            if (blackList.size() > 0) {
                 blackList.forEach(this::keepClosedPath);
+            }
         });
-
         MenuItem menuItem3 = new MenuItem("Close Unmodified");
-        menuItem3.setOnAction(actionEvent -> {
+        menuItem3.setOnAction(( actionEvent) -> {
             ObservableList<Tab> tabs = tabPane.getTabs();
-            Predicate<Tab> filter = pTab -> !((Label) pTab.getGraphic()).getText().contains(" *");
-
+            Predicate<Tab> filter = ( pTab) -> !((Label) pTab.getGraphic()).getText().contains(" *");
             List<Tab> collect = tabs.stream().filter(filter).collect(Collectors.toList());
-
-            if (collect.size() > 0)
+            if (collect.size() > 0) {
                 collect.forEach(this::keepClosedPath);
-
+            }
             tabs.removeAll(collect);
         });
-
         MenuItem menuItem4 = new MenuItem("Select Next Tab");
-        menuItem4.setOnAction(actionEvent -> {
-            if (tabPane.getSelectionModel().isSelected(tabPane.getTabs().size() - 1))
+        menuItem4.setOnAction(( actionEvent) -> {
+            if (tabPane.getSelectionModel().isSelected(tabPane.getTabs().size() - 1)) {
                 tabPane.getSelectionModel().selectFirst();
-            else
+            } else {
                 tabPane.getSelectionModel().selectNext();
+            }
         });
-
         MenuItem menuItem5 = new MenuItem("Select Previous Tab");
-        menuItem5.setOnAction(actionEvent -> {
-            if (tabPane.getSelectionModel().isSelected(0))
+        menuItem5.setOnAction(( actionEvent) -> {
+            if (tabPane.getSelectionModel().isSelected(0)) {
                 tabPane.getSelectionModel().selectLast();
-            else
+            } else {
                 tabPane.getSelectionModel().selectPrevious();
+            }
         });
-
         MenuItem menuItem6 = new MenuItem("Reopen Closed Tab");
-        menuItem6.setOnAction(actionEvent -> {
+        menuItem6.setOnAction(( actionEvent) -> {
             if (closedPaths.size() > 0) {
                 int index = closedPaths.size() - 1;
                 closedPaths.get(index).ifPresent(this::addTab);
                 closedPaths.remove(index);
             }
         });
-
         MenuItem menuItem7 = new MenuItem("Open File Location");
-
-        menuItem7.setOnAction(event -> {
-            current.currentPathParent().ifPresent(path -> {
+        menuItem7.setOnAction(( event) -> {
+            current.currentPathParent().ifPresent(( path) -> {
                 getHostServices().showDocument(path.toUri().toString());
             });
         });
-
         MenuItem menuItem8 = new MenuItem("New File");
         menuItem8.setOnAction(this::newDoc);
-
         ContextMenu contextMenu = new ContextMenu();
         contextMenu.getItems().addAll(menuItem0, menuItem1, menuItem2, menuItem3, new SeparatorMenuItem(), menuItem4, menuItem5, menuItem6, new SeparatorMenuItem(), menuItem7, menuItem8);
-
         tab.contextMenuProperty().setValue(contextMenu);
-
         Label label = new Label();
         tab.setGraphic(label);
-
-        label.setOnMouseClicked(mouseEvent -> {
-
+        label.setOnMouseClicked(( mouseEvent) -> {
             if (mouseEvent.getButton().equals(MouseButton.SECONDARY)) {
                 tabPane.getSelectionModel().select(tab);
-            } else if (mouseEvent.getClickCount() > 1) {
-                if (splitPane.getDividerPositions()[0] > 0.1)
-                    splitPane.setDividerPositions(0, 1);
-                else
-                    splitPane.setDividerPositions(0.18, 0.60);
-
+            } else {
+                if (mouseEvent.getClickCount() > 1) {
+                    if (splitPane.getDividerPositions()[0] > 0.1) {
+                        splitPane.setDividerPositions(0, 1);
+                    } else {
+                        splitPane.setDividerPositions(0.18, 0.60);
+                    }
+                }
             }
         });
-
-
         return tab;
     }
 
@@ -1004,29 +901,24 @@ public class AsciiDocController extends TextWebSocketHandler implements Initiali
             current.getNewTabPaths().remove(closedTab);
             current.getNewTabWebViews().remove(closedTab);
         }
-
     }
 
     private WebView createWebView() {
-
         WebView webView = new WebView();
         webView.setContextMenuEnabled(false);
         ContextMenu menu = new ContextMenu();
-
-        webView.setOnMouseClicked(event -> {
-
+        webView.setOnMouseClicked(( event) -> {
             if (menu.getItems().size() == 0) {
                 MenuItem copy = new MenuItem("Copy");
-                copy.setOnAction(event1 -> {
+                copy.setOnAction(( event1) -> {
                     this.cutCopy(current.currentEditorSelection());
                 });
                 MenuItem paste = new MenuItem("Paste");
-                paste.setOnAction(event1 -> {
+                paste.setOnAction(( event1) -> {
                     current.insertEditorValue(this.paste());
                 });
                 menu.getItems().addAll(copy, paste);
             }
-
             if (menu.isShowing()) {
                 menu.hide();
             }
@@ -1034,13 +926,10 @@ public class AsciiDocController extends TextWebSocketHandler implements Initiali
                 menu.show(webView, event.getScreenX(), event.getScreenY());
             }
         });
-
         WebEngine webEngine = webView.getEngine();
-
-        webView.setOnDragDropped(event -> {
+        webView.setOnDragDropped(( event) -> {
             Dragboard dragboard = event.getDragboard();
             boolean success = false;
-
             if (dragboard.hasFiles()) {
                 Optional<String> block = parserService.toImageBlock(dragboard.getFiles());
                 if (block.isPresent()) {
@@ -1053,9 +942,7 @@ public class AsciiDocController extends TextWebSocketHandler implements Initiali
                         success = true;
                     }
                 }
-
             }
-
             if (dragboard.hasHtml() && !success) {
                 Optional<String> block = parserService.toWebImageBlock(dragboard.getHtml());
                 if (block.isPresent()) {
@@ -1063,103 +950,79 @@ public class AsciiDocController extends TextWebSocketHandler implements Initiali
                     success = true;
                 }
             }
-
             if (dragboard.hasString() && !success) {
                 current.insertEditorValue(dragboard.getString());
                 success = true;
             }
-
             event.setDropCompleted(success);
             event.consume();
         });
-
-        webEngine.getLoadWorker().stateProperty().addListener((observable, oldValue, newValue) -> {
+        webEngine.getLoadWorker().stateProperty().addListener(( observable,  oldValue,  newValue) -> {
             JSObject window = (JSObject) webEngine.executeScript("window");
-            if (Objects.isNull(window.getMember("app"))) ;
+            if (Objects.isNull(window.getMember("app"))) {
+                ;
+            }
             window.setMember("app", this);
         });
         webEngine.load(String.format("http://localhost:%d/editor.html", tomcatPort));
         return webView;
     }
 
-
     public void onscroll(Object pos, Object max) {
-        if (Objects.isNull(pos) || Objects.isNull(max))
+        if (Objects.isNull(pos) || Objects.isNull(max)) {
             return;
-
-        Number position = (Number) pos; // current scroll position for editor
-        Number maximum = (Number) max; // max scroll position for editor
-
+        }
+        Number position = (Number) pos;
+        Number maximum = (Number) max;
         double ratio = (position.doubleValue() * 100) / maximum.doubleValue();
         Integer browserMaxScroll = (Integer) previewEngine.executeScript("document.documentElement.scrollHeight - document.documentElement.clientHeight;");
         double browserScrollOffset = (Double.valueOf(browserMaxScroll) * ratio) / 100.0;
         previewEngine.executeScript(String.format("window.scrollTo(0, %f )", browserScrollOffset));
-
     }
 
     public void scrollToCurrentLine(String text) {
-
-        //if ("".equals(text))
-        //    return;
-        //normalize apostrophe if presents otherwise the inevitable exception comes up
         text = IOHelper.normalize(text);
-
-        String format = String.format("runScroller('%s')", text);
+        String format = String.format("runScroller(\'%s\')", text);
         try {
             previewEngine.executeScript(format);
         } catch (Exception e) {
-
         }
     }
 
-    @RequestMapping(value = {"**.asciidoc", "**.asc", "**.txt", "**.ad", "**.adoc"}, method = RequestMethod.GET)
+    @RequestMapping(value = { "**.asciidoc", "**.asc", "**.txt", "**.ad", "**.adoc" }, method = RequestMethod.GET)
     @ResponseBody
     public DeferredResult<String> asciidoc(HttpServletRequest request) {
-
         DeferredResult<String> deferredResult = new DeferredResult<String>();
-
-        current.currentPathParent().ifPresent(path -> {
+        current.currentPathParent().ifPresent(( path) -> {
             String uri = request.getRequestURI();
-
-            if (uri.startsWith("/"))
+            if (uri.startsWith("/")) {
                 uri = uri.substring(1);
-
+            }
             Path ascFile = path.resolve(uri);
-
             Platform.runLater(() -> {
                 this.addTab(ascFile);
             });
-
             deferredResult.setResult("OK");
         });
-
-
         return deferredResult;
     }
 
-    @RequestMapping(value = {"/**/{extension:(?:\\w|\\W)+\\.(?:jpg|bmp|gif|jpeg|png|webp)$}"}, method = RequestMethod.GET)
+    @RequestMapping(value = { "/**/{extension:(?:\\w|\\W)+\\.(?:jpg|bmp|gif|jpeg|png|webp)$}" }, method = RequestMethod.GET)
     @ResponseBody
-    public ResponseEntity<byte[]> images(HttpServletRequest request, @PathVariable("extension") String extension) {
-
+    public ResponseEntity<byte[]> images(HttpServletRequest request, @PathVariable(value = "extension") String extension) {
         Enumeration<String> headerNames = request.getHeaderNames();
         String uri = request.getRequestURI();
-        byte[] temp = new byte[]{};
-        if (uri.startsWith("/"))
+        byte[] temp = new byte[] {};
+        if (uri.startsWith("/")) {
             uri = uri.substring(1);
-
-        Path imageFile = current.currentPathParent()
-                .orElseGet(() -> workingDirectory.get())
-                .resolve(uri);
+        }
+        Path imageFile = current.currentPathParent().orElseGet(() -> workingDirectory.get()).resolve(uri);
         ;
-
-
         try {
             temp = Files.readAllBytes(imageFile);
         } catch (Exception ex) {
             logger.debug(imageFile + " is not found");
         }
-
-
         return new ResponseEntity<>(temp, HttpStatus.OK);
     }
 
@@ -1169,121 +1032,88 @@ public class AsciiDocController extends TextWebSocketHandler implements Initiali
 
     public String plantUml(String uml, String type, String fileName) throws IOException {
         Objects.requireNonNull(fileName);
-
-        if (!fileName.endsWith(".png") && !"ascii".equalsIgnoreCase(type))
+        if (!fileName.endsWith(".png") && !"ascii".equalsIgnoreCase(type)) {
             return "";
-
+        }
         String defaultScale = "\nscale 600 width\n";
-
         if (!uml.contains("@startuml") && !uml.contains("@enduml")) {
             uml = defaultScale + uml;
             uml = "@startuml\n" + uml + "\n@enduml";
         } else {
             uml = uml.replaceFirst("@startuml", "@startuml" + defaultScale);
         }
-
-
         SourceStringReader reader = new SourceStringReader(uml);
-
         try (ByteArrayOutputStream os = new ByteArrayOutputStream()) {
-
             if ("ascii".equalsIgnoreCase(type)) {
                 String desc = reader.generateImage(os, new FileFormatOption(FileFormat.ATXT));
-
                 return os.toString("UTF-8");
-            }
-            // default: png
-            else {
-
-                if (!current.currentPath().isPresent())
+            } else {
+                if (!current.currentPath().isPresent()) {
                     saveDoc();
-
+                }
                 Path path = current.currentPathParent().get();
                 Path umlPath = path.resolve("images/").resolve(fileName);
-
                 Integer cacheHit = current.getCache().get(fileName);
-
                 int hashCode = (fileName + type + uml).hashCode();
                 if (Objects.isNull(cacheHit) || hashCode != cacheHit) {
-
-                    runTaskLater(task -> {
+                    runTaskLater(( task) -> {
                         try {
                             String desc = reader.generateImage(os, new FileFormatOption(FileFormat.PNG));
-
                             Files.createDirectories(path.resolve("images"));
-
                             IOHelper.writeToFile(umlPath, os.toByteArray(), CREATE, WRITE, TRUNCATE_EXISTING);
-
                             lastRenderedChangeListener.changed(null, lastRendered.getValue(), lastRendered.getValue());
                         } catch (Exception e) {
                             e.printStackTrace();
                         }
                     });
                 }
-
-
                 current.getCache().put(fileName, hashCode);
-
                 String umlRelativePath = Paths.get("images") + "/" + umlPath.getFileName();
-
                 return umlRelativePath;
             }
-
         }
-
     }
 
     public void appendWildcard() {
         Label label = (Label) current.getCurrentTab().getGraphic();
-
-        if (!label.getText().contains(" *"))
+        if (!label.getText().contains(" *")) {
             label.setText(label.getText() + " *");
+        }
     }
 
     public void textListener(String text) {
-
-        runActionLater(run -> {
+        runActionLater(( run) -> {
             String rendered = renderService.convertBasicHtml(previewEngine, text);
-
-            runSingleTaskLater(task -> {
-                if (Objects.nonNull(rendered))
+            runSingleTaskLater(( task) -> {
+                if (Objects.nonNull(rendered)) {
                     lastRendered.setValue(rendered);
+                }
             });
         });
-
     }
 
     public void htmlOnePage() {
-
         if (bookNames.contains(current.getCurrentTabText())) {
             generateHtml(null);
             return;
         }
-
-        if (!current.currentPath().isPresent())
+        if (!current.currentPath().isPresent()) {
             saveDoc();
-
+        }
         Path currentPath = current.currentPath().orElseGet(pathSaveSupplier);
-
         String asciidoc = current.currentEditorValue();
-
         String html = renderService.convertHtmlArticle(previewEngine, asciidoc);
         indikatorService.startCycle();
-        runTaskLater(task -> {
-
+        runTaskLater(( task) -> {
             String tabText = current.getCurrentTabText().replace("*", "").trim();
-
             Path path = currentPath.getParent().resolve(tabText.concat(".html"));
             IOHelper.writeToFile(path, html, CREATE, TRUNCATE_EXISTING, WRITE);
-
-            runActionLater(run -> {
+            runActionLater(( run) -> {
                 indikatorService.hideIndikator();
                 recentFiles.remove(path.toString());
                 recentFiles.add(0, path.toString());
             });
-
         });
-
     }
 
     public void cutCopy(String data) {
@@ -1293,23 +1123,18 @@ public class AsciiDocController extends TextWebSocketHandler implements Initiali
     }
 
     public void pdfOnePage() {
-
         if (bookNames.contains(current.getCurrentTabText())) {
             generatePdf(null);
             return;
         }
-
-        if (!current.currentPath().isPresent())
+        if (!current.currentPath().isPresent()) {
             saveDoc();
-
+        }
         Path currentPath = current.currentPath().orElseGet(pathSaveSupplier);
-
         String docbook = docBookController.generateDocbookArticle(previewEngine, currentPath);
-
-        runTaskLater(task -> {
+        runTaskLater(( task) -> {
             fopServiceRunner.generateArticle(currentPath.getParent(), configPath, docbook);
         });
-
     }
 
     public void copyFile(Path path) {
@@ -1318,21 +1143,19 @@ public class AsciiDocController extends TextWebSocketHandler implements Initiali
         clipboard.setContent(clipboardContent);
     }
 
-
     public String paste() {
-
         if (clipboard.hasFiles()) {
             Optional<String> block = parserService.toImageBlock(clipboard.getFiles());
-            if (block.isPresent())
+            if (block.isPresent()) {
                 return block.get();
+            }
         }
-
         if (clipboard.hasImage() && clipboard.hasHtml()) {
             Optional<String> block = parserService.toWebImageBlock(clipboard.getHtml());
-            if (block.isPresent())
+            if (block.isPresent()) {
                 return block.get();
+            }
         }
-
         return clipboard.getString();
     }
 
@@ -1342,23 +1165,18 @@ public class AsciiDocController extends TextWebSocketHandler implements Initiali
 
     @FXML
     public void saveDoc(Event actionEvent) {
-
         Path currentPath = current.currentPath().orElseGet(pathSaveSupplier);
-
-        if (Objects.isNull(currentPath))
+        if (Objects.isNull(currentPath)) {
             return;
-
+        }
         IOHelper.writeToFile(currentPath, (String) current.currentEngine().executeScript("editor.getValue();"), TRUNCATE_EXISTING, CREATE);
         current.putTab(current.getCurrentTab(), currentPath, current.currentView());
         current.setCurrentTabText(currentPath.getFileName().toString());
         recentFiles.remove(currentPath.toString());
         recentFiles.add(0, currentPath.toString());
-
         Label label = (Label) current.getCurrentTab().getGraphic();
         label.setText(label.getText().replace(" *", ""));
-
         initialDirectory = Optional.ofNullable(currentPath.toFile());
-
     }
 
     private void fitToParent(Node node) {
